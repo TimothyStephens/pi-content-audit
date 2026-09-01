@@ -1,0 +1,51 @@
+# omp-context-manager
+
+Context audit extension for [OMP](https://github.com/oh-my-pi/oh-my-pi).
+Registers exactly one command: `/content-audit`. No tools, no hooks, no flags, no dashboard.
+
+Companion extension: [omp-audit](https://github.com/TimothyStephens/omp-audit) (`/session-stats`).
+
+## What it does
+
+`/content-audit` answers: *what actually feeds the agent in this session?* — prompt parts and their sizes, injected sections, tool provenance, and on-disk skills (repo rules, skill dirs).
+
+Prompt text is taken from `ctx.getSystemPrompt()` (the live effective prompt), never re-derived from disk. Token estimates use the chars/4 convention (matches pi-devtools).
+
+**Usage:**
+
+```
+/content-audit [subcommand]
+```
+
+| Subcommand | Output |
+| --- | --- |
+| *(none)* | Full report: prompt parts, injected sections, tool provenance, on-disk skills |
+| `help` | This help text |
+| `prompt` | Per-part size table only |
+| `prompt full` | Every prompt part verbatim (capped; may contain secrets) |
+| `section <tag>` | The first top-level `<tag>` match's content |
+| `file <substr>` | The repo-rules file whose path contains `<substr>` |
+| `tools` | Tools section only (prompt footprint & provenance) |
+| `json` | Structured JSON, no bodies (shareable) |
+
+## Install
+
+Live / development (edits reload on save):
+
+```bash
+omp plugin link /path/to/omp-context-manager
+```
+
+Snapshot install:
+
+```bash
+omp install github:TimothyStephens/omp-context-manager
+```
+
+Requires an OMP install with `@oh-my-pi/pi-coding-agent` (any recent version).
+
+## Notes
+
+- Read-only: the extension never modifies prompts, files, or config.
+- `prompt full` can contain secrets (API keys, tokens) — do not paste it into tickets or chats.
+- The paged overlay (j/k/↑/↓, PgUp/PgDn, g/G, Esc/Enter) is shared code with `omp-audit`; the two repos are standalone on purpose.
