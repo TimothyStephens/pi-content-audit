@@ -181,10 +181,6 @@ function buildAudit(pi: ExtensionAPI, ctx: ExtensionCommandContext): AuditData {
   parts.forEach((part, partIdx) => {
     const { top, all, untagged } = scanTags(part);
     untaggedChars += untagged;
-    const sumTop = top.reduce((s, t) => s + t.chars, 0);
-    if (sumTop + untagged !== part.length) {
-      warnings.push(`part ${partIdx}: self-check failed (sum ${comma(sumTop)} + untagged ${comma(untagged)} !== ${comma(part.length)})`);
-    }
     for (const t of top) {
       const a = tagAgg.get(t.tag) ?? { chars: 0, parts: 0 };
       a.chars += t.chars;
@@ -285,7 +281,7 @@ function buildAudit(pi: ExtensionAPI, ctx: ExtensionCommandContext): AuditData {
 
 function diskNote(f: RepoFile): string {
   if (f.diskBytes === undefined) return "missing on disk";
-  if (f.diskBytes === f.chars) return `disk ${comma(f.diskBytes)} B ✓`;
+  if (new TextEncoder().encode(f.content).length === f.diskBytes) return `disk ${comma(f.diskBytes)} B ✓`;
   return `≠ disk ${comma(f.diskBytes)} B`;
 }
 

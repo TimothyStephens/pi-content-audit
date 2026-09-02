@@ -42,7 +42,7 @@ Snapshot install:
 omp install github:TimothyStephens/omp-context-manager
 ```
 
-Requires an OMP install with `@oh-my-pi/pi-coding-agent` (any recent version).
+Requires OMP 17.2.14+ (`@oh-my-pi/pi-coding-agent`) — the tools-provenance section uses `getAllTools(): ToolInfo[]`, which returns strings on older versions and breaks every report mode.
 
 ## Notes
 
