@@ -19,7 +19,7 @@ Prompt text is taken from `ctx.getSystemPrompt()` (the live effective prompt), n
 
 | Subcommand | Output |
 | --- | --- |
-| *(none)* | Full report: prompt parts, injected sections, tool provenance, on-disk skills |
+| *(none)* | Plan-style overlay: overview (item count, token totals), then per item in load order the exact injected text and the source file path |
 | `help` | This help text |
 | `prompt` | Per-part size table only |
 | `prompt full` | Every prompt part verbatim (capped; may contain secrets) |
@@ -48,4 +48,4 @@ Requires OMP 17.2.14+ (`@oh-my-pi/pi-coding-agent`) — the tools-provenance sec
 
 - Read-only: the extension never modifies prompts, files, or config.
 - `prompt full` can contain secrets (API keys, tokens) — do not paste it into tickets or chats.
-- The paged overlay (j/k/↑/↓, PgUp/PgDn, g/G, Esc/Enter) is shared code with `omp-audit`; the two repos are standalone on purpose.
+- The main view is a plan-style Markdown overlay (rounded box, title, scrollbar): j/k/↑/↓ scroll, Shift+↑/↓ faster, PgUp/PgDn page, g/G jump, Esc/Enter close. Subcommand views keep the plain paged overlay (same pattern omp-audit uses); the repos are standalone on purpose.
