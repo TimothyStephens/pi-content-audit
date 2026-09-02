@@ -130,9 +130,7 @@ interface AuditData {
   }[];
   skills: { name: string; dir: string; sizeBytes: number; loaded: boolean }[];
   repoFiles: RepoFile[];
-  skillNames: Set<string>;
   tagMatches: { tag: string; partIdx: number; content: string }[];
-  warnings: string[];
 }
 
 function listSkillDirs(cwd: string): string[] {
@@ -171,7 +169,6 @@ function buildAudit(pi: ExtensionAPI, ctx: ExtensionCommandContext): AuditData {
   const partStats = parts.map((p) => ({ chars: p.length, tokens: tok(p), lines: p ? p.split("\n").length : 0 }));
   const totalChars = partStats.reduce((s, p) => s + p.chars, 0);
 
-  const warnings: string[] = [];
   const tagAgg = new Map<string, { chars: number; parts: number }>();
   const tagMatches: { tag: string; partIdx: number; content: string }[] = [];
   const repoFiles: RepoFile[] = [];
@@ -273,9 +270,7 @@ function buildAudit(pi: ExtensionAPI, ctx: ExtensionCommandContext): AuditData {
     tools,
     skills,
     repoFiles,
-    skillNames,
     tagMatches,
-    warnings,
   };
 }
 
@@ -347,7 +342,6 @@ function renderAudit(a: AuditData, mode: "full" | "prompt" | "tools"): string {
     }
   }
 
-  for (const w of a.warnings) out.push(`⚠ ${w}`);
   return out.join("\n");
 }
 
@@ -404,7 +398,8 @@ async function contentAudit(pi: ExtensionAPI, args: string, ctx: ExtensionComman
   }
 
   if (sub === "prompt") {
-    if ((words[1] ?? "") === "full") {
+    const mode = words[1] ?? "";
+    if (mode === "full") {
       const out: string[] = [
         "⚠ Prompt content may contain secrets (API keys, tokens, credentials). Do not share raw dumps.",
         "",
@@ -416,6 +411,10 @@ async function contentAudit(pi: ExtensionAPI, args: string, ctx: ExtensionComman
         out.push("");
       });
       await present(out.join("\n"), ctx);
+      return;
+    }
+    if (mode !== "") {
+      await present(`unknown prompt mode "${mode}".\nusage: /content-audit prompt [full]`, ctx);
       return;
     }
     await present(renderAudit(a, "prompt"), ctx);
