@@ -4,5 +4,5 @@
   "description": "Context audit for OMP: prompt parts, injected sections, tool provenance, on-disk skills",
   "type": "module",
   "omp": { "extensions": ["./src/main.ts"] },
-  "dependencies": { "@oh-my-pi/pi-coding-agent": ">=17.2.14" }
+  "dependencies": { "@oh-my-pi/pi-coding-agent": ">=17.2.14", "@oh-my-pi/pi-tui": ">=17.2.14" }
 }
