@@ -1,5 +1,5 @@
 /**
- * omp-context-manager — OMP context audit extension (v1).
+ * pi-content-audit — OMP context audit extension (v1).
  *
  * Registers exactly one command:
  *   /content-audit — rich context manager: ordered list of loaded context
@@ -8,7 +8,7 @@
  *                    Enter open, e edit source, c copy path. Subcommands keep
  *                    the flat report (prompt, section, file, tools, json).
  *
- * Companion extension: omp-audit (/session-stats).
+ * Companion extension: pi-session-stats (/session-stats).
  * OMP 17.2.14. No tools, no hooks, no flags, no dashboard.
  */
 import type { ContextUsage, ExtensionAPI, ExtensionCommandContext, ToolInfo } from "@oh-my-pi/pi-coding-agent";

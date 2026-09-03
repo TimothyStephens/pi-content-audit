@@ -1,9 +1,9 @@
-# omp-context-manager
+# pi-content-audit
 
 Context audit extension for [OMP](https://github.com/oh-my-pi/oh-my-pi).
 Registers exactly one command: `/content-audit`. No tools, no hooks, no flags, no dashboard.
 
-Companion extension: [omp-audit](https://github.com/TimothyStephens/omp-audit) (`/session-stats`).
+Companion extension: [pi-session-stats](https://github.com/TimothyStephens/pi-session-stats) (`/session-stats`).
 
 ## What it does
 
@@ -33,13 +33,13 @@ Prompt text is taken from `ctx.getSystemPrompt()` (the live effective prompt), n
 Live / development (edits reload on save):
 
 ```bash
-omp plugin link /path/to/omp-context-manager
+omp plugin link /path/to/pi-content-audit
 ```
 
 Snapshot install:
 
 ```bash
-omp install github:TimothyStephens/omp-context-manager
+omp install github:TimothyStephens/pi-content-audit
 ```
 
 Requires OMP 17.2.14+ (`@oh-my-pi/pi-coding-agent`) — the tools-provenance section uses `getAllTools(): ToolInfo[]`, which returns strings on older versions and breaks every report mode.
@@ -48,4 +48,4 @@ Requires OMP 17.2.14+ (`@oh-my-pi/pi-coding-agent`) — the tools-provenance sec
 
 - Read-only: the extension never modifies prompts, files, or config.
 - `prompt full` can contain secrets (API keys, tokens) — do not paste it into tickets or chats.
-- The main view is a plan-style Markdown overlay (rounded box, title, scrollbar): j/k/↑/↓ scroll, Shift+↑/↓ faster, PgUp/PgDn page, g/G jump, Esc/Enter close. Subcommand views keep the plain paged overlay (same pattern omp-audit uses); the repos are standalone on purpose.
+- The main view is a plan-style Markdown overlay (rounded box, title, scrollbar): j/k/↑/↓ scroll, Shift+↑/↓ faster, PgUp/PgDn page, g/G jump, Esc/Enter close. Subcommand views keep the plain paged overlay (same pattern pi-session-stats uses); the repos are standalone on purpose.

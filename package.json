@@ -1,5 +1,5 @@
 {
-  "name": "omp-context-manager",
+  "name": "pi-content-audit",
   "version": "0.1.0",
   "description": "Context audit for OMP: prompt parts, injected sections, tool provenance, on-disk skills",
   "type": "module",
