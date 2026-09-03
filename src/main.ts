@@ -2,11 +2,11 @@
  * pi-content-audit — OMP context audit extension (v1).
  *
  * Registers exactly one command:
- *   /content-audit — rich context manager: ordered list of loaded context
+ *   /content-audit — context audit: ordered list of loaded context
  *                    items (skills, rules, extensions, tools, environment,
- *                    context files) with exact injected text & source paths;
- *                    Enter open, e edit source, c copy path. Subcommands keep
- *                    the flat report (prompt, section, file, tools, json).
+ *                    context files) with exact injected text & source paths.
+ *                    Subcommands keep the flat report (prompt, section,
+ *                    file, tools, json).
  *
  * Companion extension: pi-session-stats (/session-stats).
  * OMP 17.2.14. No tools, no hooks, no flags, no dashboard.
@@ -30,9 +30,10 @@ import * as os from "node:os";
 // Shared helpers
 // ---------------------------------------------------------------------------
 
-const tok = (s: string) => Math.max(0, Math.ceil(s.length / 4)); // chars/4 convention (matches pi-devtools)
-const tokOfChars = (n: number) => Math.max(0, Math.ceil(n / 4));
+const tokOfChars = (n: number) => Math.max(0, Math.ceil(n / 4)); // chars/4 convention (matches pi-devtools)
+const tok = (s: string) => tokOfChars(s.length);
 const DUMP_CAP = 200_000; // display cap for body dumps
+const SKILL_LINE = /^-\s+([A-Za-z0-9_.-]+):/;
 const ESC = String.fromCharCode(27); // ESC for raw terminal key sequences
 
 const comma = (n: number): string => n.toLocaleString("en-US");
@@ -239,7 +240,7 @@ async function present(text: string, ctx: ExtensionCommandContext): Promise<void
   if (!ctx.hasUI) {
     console.log(text);
     return;
-  } // OMP print/RPC mode — NOTE: `ctx.mode` does NOT exist in OMP
+  } // ctx.mode does not exist in OMP; ctx.hasUI is the mode check
   const lines = text.split("\n");
   await ctx.ui.custom<void>(
     (tui, _theme, _kb, done) => {
@@ -463,7 +464,7 @@ function buildAudit(pi: ExtensionAPI, ctx: ExtensionCommandContext): AuditData {
       }
       if (t.tag === "skills") {
         for (const line of t.content.split("\n")) {
-          const sm = line.match(/^-\s+([A-Za-z0-9_.-]+):/);
+          const sm = line.match(SKILL_LINE);
           if (sm) skillNames.add(sm[1]);
         }
       }
@@ -602,7 +603,7 @@ async function buildItems(pi: ExtensionAPI, ctx: ExtensionCommandContext, a: Aud
   const skillsTag = tag("skills");
   if (skillsTag) {
     for (const line of skillsTag.content.split("\n")) {
-      const sm = line.match(/^-\s+([A-Za-z0-9_.-]+):/);
+      const sm = line.match(SKILL_LINE);
       if (!sm) continue;
       const md = skillFiles.get(sm[1]);
       items.push(
