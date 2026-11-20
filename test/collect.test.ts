@@ -7,6 +7,7 @@ import * as os from "node:os";
 import * as path from "node:path";
 import { test } from "node:test";
 import { type Host, buildAuditDoc, buildSummary, register } from "../src/core.ts";
+import { docText } from "../src/pager.ts";
 import * as ompCollect from "../src/omp-collect.ts";
 import * as piCollect from "../src/pi-collect.ts";
 
@@ -62,7 +63,7 @@ test("Pi: items in prompt order, each one's text cut verbatim from the prompt", 
       "extension:pi-notes",
       "tool-list:<tools> footer",
       "guidelines:guidelines",
-      "section:<docs>",
+      "docs:<docs>",
       "addendum:appended system prompt",
       "context-file:/work/proj/AGENTS.md",
       "context-file:/home/u/.pi/agent/AGENTS.md",
@@ -81,13 +82,22 @@ test("Pi: items in prompt order, each one's text cut verbatim from the prompt", 
   assert.equal(items.find((i) => i.kind === "environment")?.injectedText.trim(), "/work/proj");
 });
 
-test("Pi: the overview document renders, with the unknown context usage said plainly", async () => {
+test("Pi: the overview: totals, share by type, one row per item, then each item verbatim", async () => {
   const a = piCollect.collect(piApi as never, piCtx as never);
   const items = await piCollect.items(piApi as never, piCtx as never, a);
-  const doc = buildAuditDoc(items, buildSummary(a, items));
-  assert.match(doc, /\| loaded items \| 12 \|/);
-  assert.match(doc, /\| context window \| n\/a \(unknown until the next reply\) \/ 131,072 tok \|/);
-  assert.match(doc, /## \[9\] skill — learn-repo/);
+  const doc = docText(buildAuditDoc(items, buildSummary(a, items)));
+  assert.match(doc, /loaded items +12 /);
+  assert.match(doc, /context window +n\/a \(unknown until the next reply\) \/ 131,072 tok/);
+  assert.match(doc, /attributed +~\d+ tok \(\d+% of the prompt\)/);
+  const types = doc.slice(doc.indexOf("Prompt share by type"), doc.indexOf("Items (prompt order)"));
+  const typeRows = types.split("\n").slice(3).filter((l) => /~\d/.test(l)).map((l) => l.split(/ +/)[0]);
+  assert.equal(typeRows[0], "docs", "the largest share first: Pi's own docs pointer");
+  assert.ok(typeRows.includes("(other)"), "unattributed prompt text is its own row");
+  assert.match(doc, /^ 9  skill +learn-repo +~56 +\d+% +█+$/m);
+  assert.match(doc, /^\[9\] skill — learn-repo$/m);
+  assert.match(doc, /^ {6}<name>learn-repo<\/name>$/m, "injected text verbatim (its own 4-space indent kept), indented 2, no fences");
+  assert.doesNotMatch(doc, /```/);
+  assert.doesNotMatch(doc, /\bcu\nrrent/, "verbatim prose breaks at spaces");
 });
 
 test("Pi: skillBlock finds only a listed skill, and treats the name literally", () => {
@@ -181,7 +191,7 @@ test("subcommands on Pi: section, file, prompt, json, full report", async () => 
   assert.equal(json.skills.length, 3);
   assert.ok(json.sections.some((s: { tag: string; files?: unknown[] }) => s.tag === "project_context" && s.files?.length === 2));
   const report = await run(piHost, piCtx, "");
-  assert.match(report, /^# Context audit/);
+  assert.match(report, /^Context audit\n/);
   assert.match(await run(piHost, piCtx, "bogus"), /unknown subcommand "bogus"/);
 });
 

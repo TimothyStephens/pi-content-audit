@@ -33,7 +33,7 @@ The two hosts build their prompts differently, so the items differ:
 
 | Subcommand | Output |
 | --- | --- |
-| *(none)* | Plan-style overlay: overview (item count, token totals), then per item in load order the exact injected text (per-item injected text capped at 20,000 chars) and the source file path |
+| *(none)* | Overview: totals (items, prompt and attributed tokens, context window), the prompt's share by item type (plus what no item accounts for), one row per item in prompt order with its share, then each item's exact injected text (capped at 20,000 chars) and source file |
 | `help` | This help text |
 | `prompt` | Per-part size table only |
 | `prompt full` | Every prompt part verbatim (capped; may contain secrets) |
@@ -86,7 +86,7 @@ A `[[repo]]` entry in the OMP and Pi profiles' `plugins.toml`, at a pinned commi
 | File | What |
 | --- | --- |
 | `src/core.ts` | the report, subcommands and registration; imports no host package |
-| `src/pager.ts` | the viewer (the same file is in pi-session-stats) |
+| `src/pager.ts` | report layout and the viewer (the same file is in pi-session-stats) |
 | `src/omp-collect.ts`, `src/omp.ts` | OMP's collector and wiring (the `omp` manifest entry) |
 | `src/pi-collect.ts`, `src/pi.ts` | Pi's collector and wiring (the `pi` manifest entry) |
 
@@ -114,7 +114,11 @@ main view's tool items break (the other subcommands still work).
 
 - Read-only: the extension never modifies prompts, files, or config.
 - `prompt full` can contain secrets (API keys, tokens) — do not paste it into tickets or chats.
-- Main-view overlay keys: j/k/arrows scroll, Shift+↑/↓ five lines, PgUp/PgDn page, g/G or
-  Home/End jump, Esc/Enter close; the footer shows the visible line range. Subcommand views
-  keep the plain paged overlay (same pattern pi-session-stats uses); the repos are standalone
-  on purpose.
+- Viewer keys: j/k/arrows scroll, J/K or Shift+↑/↓ five lines, PgUp/PgDn (b/space) page, g/G
+  or Home/End jump, n/p (also ]/[ and Tab/Shift+Tab) item by item, `/` to search (type, Enter,
+  then n/N between matches, Esc to clear). Esc/Enter/q close. Subcommand views keep the plain
+  pager.
+- The overview is laid out by the extension itself (aligned columns, injected text indented
+  verbatim, no Markdown), so it looks the same in OMP and Pi; control characters in injected
+  text are shown as symbols, never sent to the terminal. The viewer (`src/pager.ts`) is the
+  same file in pi-session-stats; the repos are standalone on purpose.

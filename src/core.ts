@@ -23,7 +23,7 @@
  * No tools, no hooks, no flags, no dashboard.
  */
 import * as fs from "node:fs";
-import { type UiKit, type ViewCtx, present, presentDoc } from "./pager.ts";
+import { type Block, type UiKit, type ViewCtx, present, presentDoc } from "./pager.ts";
 
 // ---------------------------------------------------------------------------
 // Shared helpers
@@ -121,7 +121,8 @@ export type ItemKind =
   | "guidelines" // Pi: the <rules> section (tool guidelines + extension prompt guidelines)
   | "tool-list" // Pi: the <tools> section (one snippet line per active tool)
   | "addendum" // Pi: the <addendum> section (APPEND_SYSTEM.md / --append-system-prompt)
-  | "section" // Pi: any other prompt section (docs pointer, extension-added sections)
+  | "docs" // Pi: the <docs> section (pointer to Pi's own documentation)
+  | "section" // Pi: any other prompt section (one an extension added)
   | "extension" // one installed extension (its tools, grouped by sourceInfo.baseDir)
   | "mcp-tools" // MCP-provided tools (grouped)
   | "built-in-tools" // built-in/sdk tools (grouped into one item)
@@ -285,28 +286,11 @@ export function diskNote(f: RepoFile): string {
 }
 
 // ---------------------------------------------------------------------------
-// Plan-style audit document: overview table + one section per loaded item.
-// Pure function; also used verbatim as the no-UI (print/RPC) output.
+// The audit document: totals, prompt share by type, one row per item, then
+// each item's exact injected text. Laid out by pager.ts; also the no-UI output.
 // ---------------------------------------------------------------------------
 
 const ITEM_TEXT_CAP = 20_000; // per-item display cap for injected text (chars)
-
-const escapeMd = (s: string): string => s.replace(/([\\`*_\[\]|])/g, "\\$1");
-
-/** Backtick fence longer than any backtick run in the text (min 3), so the
- *  injected text can never terminate its own code fence. No info string →
- *  no syntax highlighting; content renders verbatim. */
-function fenceFor(text: string): string {
-  let max = 0;
-  let run = 0;
-  for (const ch of text) {
-    if (ch === "`") {
-      run += 1;
-      if (run > max) max = run;
-    } else run = 0;
-  }
-  return "`".repeat(Math.max(3, max + 1));
-}
 
 function capItemText(t: string): { text: string; hidden: number } {
   if (t.length <= ITEM_TEXT_CAP) return { text: t, hidden: 0 };
@@ -315,6 +299,23 @@ function capItemText(t: string): { text: string; hidden: number } {
   return { text: t.slice(0, cut), hidden: t.length - cut };
 }
 
+/** Short type names for the tables; several kinds share one (both tool groupings are "tools"). */
+const TYPE_LABEL: Record<ItemKind, string> = {
+  "context-file": "file",
+  skill: "skill",
+  "generic-rule": "rules",
+  "domain-rule": "rule",
+  guidelines: "guidelines",
+  "tool-list": "tools",
+  addendum: "addendum",
+  docs: "docs",
+  section: "section",
+  extension: "extension",
+  "mcp-tools": "mcp",
+  "built-in-tools": "tools",
+  environment: "env",
+};
+
 const usageStr = (u?: ContextUsageLike): string =>
   u && u.tokens !== null && u.percent !== null
     ? `${u.percent}% · ${comma(u.tokens)} / ${comma(u.contextWindow)} tok`
@@ -322,50 +323,79 @@ const usageStr = (u?: ContextUsageLike): string =>
       ? `n/a (unknown until the next reply) / ${comma(u.contextWindow)} tok`
       : "n/a";
 
-export function buildAuditDoc(items: LoadedItem[], summary: AuditSummary): string {
-  const out: string[] = [
-    "# Context audit",
-    "",
-    "| metric | value |",
-    "| --- | --- |",
-    `| loaded items | ${summary.itemCount} |`,
-    `| system prompt | ~${comma(summary.systemPromptTokens)} tok |`,
-    `| attributed to items | ~${comma(summary.attributedTokens)} tok |`,
-    `| context window | ${usageStr(summary.contextUsage)} |`,
-    "",
+const share = (n: number, of: number): string => `${of > 0 ? Math.round((n / of) * 100) : 0}%`;
+
+function shareBar(n: number, of: number, w: number): string {
+  if (n <= 0 || of <= 0) return "";
+  return "█".repeat(Math.max(1, Math.round((Math.min(n, of) / of) * w)));
+}
+
+export function buildAuditDoc(items: LoadedItem[], summary: AuditSummary): Block[] {
+  const total = summary.systemPromptTokens;
+  const out: Block[] = [
+    { kind: "h1", text: "Context audit" },
+    {
+      kind: "kv",
+      cols: 2,
+      pairs: [
+        ["loaded items", comma(summary.itemCount)],
+        ["system prompt", `~${comma(total)} tok`],
+        ["context window", usageStr(summary.contextUsage)],
+        ["attributed", `~${comma(summary.attributedTokens)} tok (${share(summary.attributedTokens, total)} of the prompt)`],
+      ],
+    },
   ];
   if (items.length === 0) {
-    out.push("(no loaded items found)");
-    return out.join("\n");
+    out.push({ kind: "gap" }, { kind: "text", text: "(no loaded items found)" });
+    return out;
   }
-  out.push(
-    "| # | type | name | location | size | tokens |",
-    "| --- | --- | --- | --- | --- | --- |",
-    ...items.map((it, i) =>
-      `| ${i + 1} | ${escapeMd(it.kind)} | ${escapeMd(it.label)} | ${
-        it.path ? escapeMd(it.path) : "—"
-      } | ${it.diskBytes !== undefined ? fmtBytes(it.diskBytes) : "—"} | ~${comma(it.injectedTokens)} |`
-    ),
-    "",
-  );
-  items.forEach((it, i) => {
-    out.push(`## [${i + 1}] ${it.kind} — ${escapeMd(it.label)}`);
-    out.push(`~${comma(it.injectedTokens)} tok${it.note ? ` · ${it.note}` : ""}`);
-    out.push(
-      it.path
-        ? `source: ${it.path.includes("`") ? escapeMd(it.path) : `\`${it.path}\``} (${
-            it.diskBytes !== undefined ? `${fmtBytes(it.diskBytes)} on disk` : "missing on disk"
-          })`
-        : "source: built-in (no file)",
-    );
-    out.push("");
-    const { text, hidden } = capItemText(it.injectedText);
-    const fence = fenceFor(text);
-    out.push(fence, text, fence);
-    if (hidden > 0) out.push(`… truncated: showing ${comma(text.length)} of ${comma(it.injectedChars)} chars`);
-    out.push("");
+
+  // Where the prompt goes, by type.
+  const byType = new Map<string, { n: number; tok: number }>();
+  for (const it of items) {
+    const g = byType.get(TYPE_LABEL[it.kind]) ?? { n: 0, tok: 0 };
+    g.n += 1;
+    g.tok += it.injectedTokens;
+    byType.set(TYPE_LABEL[it.kind], g);
+  }
+  const typeRows: [string, number, number][] = [...byType.entries()].map(([k, g]) => [k, g.n, g.tok]);
+  const rest = total - summary.attributedTokens;
+  if (rest > 0) typeRows.push(["(other)", 0, rest]);
+  typeRows.sort((a, b) => b[2] - a[2]);
+  out.push({ kind: "h2", text: "Prompt share by type" });
+  out.push({
+    kind: "table",
+    head: ["type", "items", "tokens", "share", ""],
+    right: [1, 2, 3],
+    rows: typeRows.map(([k, n, tok]) => [k, n ? comma(n) : "", `~${comma(tok)}`, share(tok, total), shareBar(tok, total, 30)]),
   });
-  return out.join("\n");
+  if (rest > 0) out.push({ kind: "text", tone: "dim", text: "(other): prompt text no item accounts for — preamble, separators, untagged prose" });
+
+  out.push({ kind: "h2", text: "Items (prompt order)" });
+  out.push({ kind: "text", tone: "dim", text: "n/p jumps item by item below; / searches" });
+  out.push({
+    kind: "table",
+    head: ["#", "type", "name", "tokens", "share", ""],
+    right: [0, 3, 4],
+    flex: 2,
+    rows: items.map((it, i) => [String(i + 1), TYPE_LABEL[it.kind], it.label, `~${comma(it.injectedTokens)}`, share(it.injectedTokens, total), shareBar(it.injectedTokens, total, 12)]),
+  });
+
+  items.forEach((it, i) => {
+    out.push({ kind: "h2", text: `[${i + 1}] ${TYPE_LABEL[it.kind]} — ${it.label}` });
+    out.push({ kind: "text", tone: "dim", text: `~${comma(it.injectedTokens)} tok (${share(it.injectedTokens, total)})${it.note ? ` · ${it.note}` : ""}` });
+    out.push({
+      kind: "text",
+      tone: "dim",
+      text: it.path
+        ? `source: ${it.path} (${it.diskBytes !== undefined ? `${fmtBytes(it.diskBytes)} on disk` : "missing on disk"})`
+        : "source: built-in (no file)",
+    });
+    const { text, hidden } = capItemText(it.injectedText);
+    out.push({ kind: "pre", text });
+    if (hidden > 0) out.push({ kind: "text", tone: "dim", text: `… truncated: showing ${comma(text.length)} of ${comma(it.injectedChars)} chars` });
+  });
+  return out;
 }
 
 export function buildSummary(a: AuditData, items: LoadedItem[]): AuditSummary {

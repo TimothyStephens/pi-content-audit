@@ -142,7 +142,7 @@ export async function items(pi: ExtensionAPI, ctx: ExtensionCommandContext, a: A
     );
 
   const docsTag = tag("docs");
-  if (docsTag) out.push(mk({ kind: "section", label: "<docs>", injectedText: docsTag.content, note: "built-in pointer to Pi's own docs" }));
+  if (docsTag) out.push(mk({ kind: "docs", label: "<docs>", injectedText: docsTag.content, note: "built-in pointer to Pi's own docs" }));
 
   const addTag = tag("addendum");
   if (addTag)
