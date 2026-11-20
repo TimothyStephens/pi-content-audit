@@ -1,6 +1,6 @@
 # pi-content-audit
 
-Context audit extension for [OMP](https://github.com/oh-my-pi/oh-my-pi) and
+Context audit extension for [OMP](https://github.com/can1357/oh-my-pi) and
 [Pi](https://github.com/earendil-works/pi). Answers: *what actually
 feeds the agent in this session?* Registers exactly one command: `/content-audit`. No tools, no
 hooks, no flags, no dashboard.
