@@ -52,19 +52,18 @@ The two hosts build their prompts differently, so the items differ:
 2. **Development** (live reload):
 
    ```bash
-   npm install
    omp plugin link /path/to/pi-content-audit
    ```
 
-   Symlinks this repo into `~/.omp/plugins/node_modules`; edits reload on save. `npm install`
-   is required so the extension's imports resolve locally.
+   Symlinks this repo into `~/.omp/plugins/node_modules`; edits reload on save. Nothing needs
+   installing: OMP resolves the `@oh-my-pi/*` imports to its own bundled copy.
 3. **Snapshot**:
 
    ```bash
    omp install github:TimothyStephens/pi-content-audit
    ```
 
-   Clones the repo and installs its dependencies into `~/.omp/plugins`.
+   Clones the repo into `~/.omp/plugins`.
 
 ### Pi
 
@@ -73,9 +72,11 @@ pi install git:github.com/TimothyStephens/pi-content-audit
 ```
 
 or, from a checkout, `pi install ./pi-content-audit`. Pi maps the `@earendil-works/*` imports to
-its own modules, so nothing needs installing for the Pi entry point. A git install still runs
-`npm install`, which fetches the `@oh-my-pi/*` dependencies the OMP entry point uses; Pi never
-loads them.
+its own modules, so nothing needs installing.
+
+Both hosts provide the packages this extension imports, so `package.json` lists them as optional
+`peerDependencies` and an install fetches nothing. (As `dependencies` they made every install
+download OMP, and agentbox's Pi install was killed for memory doing it.)
 
 ### agentbox
 

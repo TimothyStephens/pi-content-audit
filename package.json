@@ -1,6 +1,6 @@
 {
   "name": "pi-content-audit",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Context audit for OMP and Pi: prompt parts, injected sections, tool provenance, on-disk skills",
   "type": "module",
   "omp": {
@@ -16,8 +16,16 @@
   "scripts": {
     "test": "node --test test/*.test.ts"
   },
-  "dependencies": {
+  "peerDependencies": {
     "@oh-my-pi/pi-coding-agent": ">=17.2.14",
     "@oh-my-pi/pi-tui": ">=17.2.14"
+  },
+  "peerDependenciesMeta": {
+    "@oh-my-pi/pi-coding-agent": {
+      "optional": true
+    },
+    "@oh-my-pi/pi-tui": {
+      "optional": true
+    }
   }
 }
