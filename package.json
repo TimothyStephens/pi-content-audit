@@ -1,8 +1,23 @@
 {
   "name": "pi-content-audit",
-  "version": "0.1.0",
-  "description": "Context audit for OMP: prompt parts, injected sections, tool provenance, on-disk skills",
+  "version": "0.2.0",
+  "description": "Context audit for OMP and Pi: prompt parts, injected sections, tool provenance, on-disk skills",
   "type": "module",
-  "omp": { "extensions": ["./src/main.ts"] },
-  "dependencies": { "@oh-my-pi/pi-coding-agent": ">=17.2.14", "@oh-my-pi/pi-tui": ">=17.2.14" }
+  "omp": {
+    "extensions": [
+      "./src/omp.ts"
+    ]
+  },
+  "pi": {
+    "extensions": [
+      "./src/pi.ts"
+    ]
+  },
+  "scripts": {
+    "test": "node --test test/*.test.ts"
+  },
+  "dependencies": {
+    "@oh-my-pi/pi-coding-agent": ">=17.2.14",
+    "@oh-my-pi/pi-tui": ">=17.2.14"
+  }
 }
